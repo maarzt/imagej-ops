@@ -117,15 +117,13 @@ public class VectorAccelerator<T extends RealType<T>> implements
 
 			accelerationFactor = computeAccelerationFactor(yk_iterated);
 
-			System.out.println("Acceleration Factor: " + accelerationFactor);
-
-			if ((accelerationFactor < 0)) {
+			if (accelerationFactor < 0) {
 				// xkm1_previous = null;
 				gkm1 = null;
 				accelerationFactor = 0.0;
 			}
 
-			if ((accelerationFactor > 1.0f)) {
+			if (accelerationFactor > 1.0f) {
 				accelerationFactor = 1.0f;
 			}
 		}
