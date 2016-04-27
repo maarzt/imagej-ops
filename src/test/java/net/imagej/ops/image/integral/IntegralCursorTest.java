@@ -76,7 +76,7 @@ public class IntegralCursorTest {
 		cursor.fwd();
 		cursor.fwd();
 
-		IntegralCursor<ByteType> integralCursor = new IntegralCursor<ByteType>(img.randomAccess(), 
+		IntegralCursor<ByteType> integralCursor = new IntegralCursor<>(img.randomAccess(), 
 			(RectangleNeighborhood) cursor.get());
 
 		assertEquals(integralCursor.next(), new ByteType((byte) 1));
