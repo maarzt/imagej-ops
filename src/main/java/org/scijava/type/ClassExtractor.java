@@ -1,19 +1,20 @@
 /*
  * #%L
- * ImageJ software for multidimensional image processing and analysis.
+ * SciJava Common shared library for SciJava software.
  * %%
- * Copyright (C) 2014 - 2016 Board of Regents of the University of
- * Wisconsin-Madison, University of Konstanz and Brian Northan.
+ * Copyright (C) 2009 - 2016 Board of Regents of the University of
+ * Wisconsin-Madison, Broad Institute of MIT and Harvard, and Max Planck
+ * Institute of Molecular Cell Biology and Genetics.
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -28,16 +29,41 @@
  * #L%
  */
 
-package net.imagej.ops;
+package org.scijava.type;
 
 import java.lang.reflect.Type;
 
+import org.scijava.Priority;
+import org.scijava.plugin.AbstractHandlerPlugin;
+import org.scijava.plugin.Plugin;
+
 /**
- * An object which has an associated generic type.
+ * {@link TypeExtractor} plugin which extracts the object's raw class.
+ * <p>
+ * Of course, the raw class does not include any generics-related information.
+ * So this extraction approach is a last resort; this plugin is intended to be
+ * last in line to handle 
+ * </p>
  *
  * @author Curtis Rueden
  */
-public interface GenericTyped {
+@Plugin(type = TypeExtractor.class, priority = Priority.VERY_LOW_PRIORITY)
+public class ClassExtractor extends AbstractHandlerPlugin<Object> implements
+	TypeExtractor
+{
 
-	Type getType();
+	// -- TypeExtractor methods --
+
+	@Override
+	public Type typeOf(final Object o) {
+		return o.getClass();
+	}
+
+	// -- Typed methods --
+
+	@Override
+	public boolean supports(final Object o) {
+		return o != null;
+	}
+
 }

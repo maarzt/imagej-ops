@@ -28,7 +28,7 @@
  * #L%
  */
 
-package net.imagej.ops;
+package org.scijava.type;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -40,6 +40,12 @@ import java.lang.reflect.TypeVariable;
 import java.util.Collections;
 import java.util.List;
 
+import net.imagej.ops.AbstractOp;
+import net.imagej.ops.AbstractOpTest;
+import net.imagej.ops.Contingent;
+import net.imagej.ops.Op;
+import net.imagej.ops.OpCandidate;
+import net.imagej.ops.OpRef;
 import net.imagej.ops.OpCandidate.StatusCode;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
@@ -51,6 +57,8 @@ import org.junit.Test;
 import org.scijava.InstantiableException;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.type.GenericTyped;
+import org.scijava.type.Nil;
 
 /**
  * Tests {@link Nil}.
