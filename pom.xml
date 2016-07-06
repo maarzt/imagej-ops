@@ -219,6 +219,12 @@
 			<groupId>org.scijava</groupId>
 			<artifactId>scripting-javascript</artifactId>
 		</dependency>
+		
+		<!-- Third party dependencies -->
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+		</dependency>
 
 		<!-- Test scope dependencies -->
 		<dependency>
@@ -244,8 +250,7 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-math3</artifactId>
-			<version>3.5</version>
-		</dependency>
+			</dependency>
 	</dependencies>
 
 	<build>
