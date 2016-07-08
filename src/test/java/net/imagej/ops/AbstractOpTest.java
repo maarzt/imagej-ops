@@ -30,6 +30,8 @@
 
 package net.imagej.ops;
 
+import io.scif.img.IO;
+
 import java.net.URL;
 import java.util.Random;
 
@@ -40,7 +42,6 @@ import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.ByteArray;
 import net.imglib2.img.basictypeaccess.array.FloatArray;
-import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.integer.ByteType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.FloatType;
@@ -51,9 +52,6 @@ import org.junit.Before;
 import org.scijava.Context;
 import org.scijava.cache.CacheService;
 import org.scijava.plugin.Parameter;
-
-import ij.ImagePlus;
-import ij.io.Opener;
 
 /**
  * Base class for {@link Op} unit testing.
@@ -179,8 +177,7 @@ public abstract class AbstractOpTest {
 		final String resourcePath)
 	{
 		final URL url = c.getResource(resourcePath);
-		final ImagePlus img = new Opener().openImage(url.getPath());
-		return ImageJFunctions.convertFloat(img);
+		return IO.openFloatImgs(url.getPath()).get(0).getImg();
 	}
 
 	public static class NoOp extends AbstractOp {
