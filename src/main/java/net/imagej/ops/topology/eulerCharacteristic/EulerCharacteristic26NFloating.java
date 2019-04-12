@@ -35,7 +35,26 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.BooleanType;
 import net.imglib2.type.numeric.real.DoubleType;
 
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.thread.ThreadService;
+
+import javax.swing.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.IntFunction;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.IntStream.generate;
 
 /**
  * An Op which calculates the euler characteristic (χ) of the given binary image. The object in the image
@@ -69,7 +88,7 @@ import org.scijava.plugin.Plugin;
  * @author Richard Domander (Royal Veterinary College, London)
  * @author Michael Doube (Royal Veterinary College, London)
  */
-@Plugin(type = Ops.Topology.EulerCharacteristic26NFloating.class)
+@Plugin(type = net.imagej.ops.topology.eulerCharacteristic.EulerCharacteristic26NFloating.class)
 public class EulerCharacteristic26NFloating
         <B extends BooleanType<B>> extends AbstractUnaryHybridCF<RandomAccessibleInterval<B>, DoubleType>
         implements Ops.Topology.EulerCharacteristic26NFloating, Contingent {
@@ -213,6 +232,11 @@ public class EulerCharacteristic26NFloating
     }
     //endregion
 
+    //options can be see in switch in the compute method of this class
+    @Parameter(required = false)
+    String MultiThreadingStrategy = "Runnable";
+
+
     /** The algorithm is defined only for 3D images */
     @Override
     public boolean conforms() {
@@ -222,8 +246,28 @@ public class EulerCharacteristic26NFloating
     @Override
     public void compute(RandomAccessibleInterval<B> interval, DoubleType output) {
         final Octant<B> octant = new Octant<>(interval);
-        int sumDeltaEuler = 0;
+        int sumDeltaEuler;
+        switch (MultiThreadingStrategy) {
+            case "Sequential":
+                sumDeltaEuler = getEulerCharacteristicSequential(interval,octant);
+                break;
+            case "ParallelStream":
+                sumDeltaEuler = getEulerCharacteristicParallelStream(interval);
+                break;
+            case "Consumer":
+                sumDeltaEuler = getEulerCharacteristicConsumer(interval);
+                break;
+            case "Runnable":
+                sumDeltaEuler = getEulerCharacteristicRunnable(interval);
+                break;
+            default:
+                sumDeltaEuler = (int) Double.NaN;
+        }
+        output.set(sumDeltaEuler / 8.0);
+    }
 
+    private int getEulerCharacteristicSequential(RandomAccessibleInterval<B> interval, Octant<B> octant) {
+        int sumDeltaEuler = 0;
         for (int z = 0; z <= interval.dimension(2); z++) {
             for (int y = 0; y <= interval.dimension(1); y++) {
                 for (int x = 0; x <= interval.dimension(0); x++) {
@@ -232,8 +276,108 @@ public class EulerCharacteristic26NFloating
                 }
             }
         }
+        return sumDeltaEuler;
+    }
 
-        output.set(sumDeltaEuler / 8.0);
+    private int getEulerCharacteristicParallelStream(RandomAccessibleInterval<B> interval) {
+        //set up variables
+        int nSlices = (int) interval.dimension(2);
+        IntStream zRange = IntStream.range(0,nSlices+1);
+        int[] partialSums = new int[nSlices+1];
+
+        //iterate over zRange in parallel
+        zRange.parallel().forEach(z -> {
+            for (int y = 0; y <= interval.dimension(1); y++) {
+                for (int x = 0; x <= interval.dimension(0); x++) {
+                        Octant<B> octant =new Octant<>(interval);
+                        octant.setNeighborhood(x, y, z);
+                        partialSums[z]+=getDeltaEuler(octant);
+                }
+            }
+        });
+
+        //sum over slices
+        int sumDeltaEuler = Arrays.stream(partialSums).sum();
+        return sumDeltaEuler;
+    }
+
+
+
+    private int getEulerCharacteristicConsumer(RandomAccessibleInterval<B> interval) {
+
+        final int[] sumDeltaEuler = {0};//this needs to be final, so use array hack.
+
+        final Consumer<Integer> consumer = z -> {
+            int sliceDeltaEuler=0;
+            for (int y = 0; y <= interval.dimension(1); y++) {
+                for (int x = 0; x <= interval.dimension(0); x++) {
+                        Octant<B> octant = new Octant<>(interval);
+                        octant.setNeighborhood(x, y, z);
+                        sliceDeltaEuler = getDeltaEuler(octant);
+                }
+            }
+            synchronized (sumDeltaEuler) {
+                sumDeltaEuler[0]+=sliceDeltaEuler;
+            }
+        };
+
+        // is this really parallel?
+        for(int z = 0; z<=interval.dimension(2); z++){
+            consumer.accept(z);
+        }
+        return sumDeltaEuler[0];
+    }
+
+    //this one is still work in progress
+    private int getEulerCharacteristicRunnable(RandomAccessibleInterval<B> interval) {
+        ThreadService ts = ops().getContext().getService(ThreadService.class);
+        final int nSlices = (int) interval.dimension(2);
+        final IntStream zRange = IntStream.range(0,nSlices);
+
+        final List<SliceEulerComputer> collect = zRange.mapToObj(z -> new SliceEulerComputer(z, interval)).collect(toList());
+
+        List<Integer> partialSums = new ArrayList<>(nSlices);
+
+        try {
+            for (SliceEulerComputer c : collect) {
+                final Future<?> run = ts.run(c);
+                final SliceEulerComputer sec = (SliceEulerComputer) run.get();
+                partialSums.add(sec.getSliceEuler());
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        return partialSums.stream().reduce((a,b)->a+b).get();
+    }
+
+    private class SliceEulerComputer implements Runnable {
+        SliceEulerComputer(int z,RandomAccessibleInterval<B> interval)
+        {
+            this.z = z;
+            this.interval = interval;
+        }
+
+        @Override
+        public void run() {
+            for (int y = 0; y <= interval.dimension(1); y++) {
+                for (int x = 0; x <= interval.dimension(0); x++) {
+                    Octant<B> octant = new Octant<>(interval);
+                    octant.setNeighborhood(x, y, z);
+                    sliceEuler += getDeltaEuler(octant);
+                }
+            }
+        }
+
+        public int getSliceEuler() {
+            return sliceEuler;
+        }
+
+        private int z;
+        private RandomAccessibleInterval<B> interval;
+        private int sliceEuler;
     }
 
     @Override
