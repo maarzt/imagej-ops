@@ -294,6 +294,18 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.openjdk.jmh</groupId>
+			<artifactId>jmh-core</artifactId>
+			<version>1.19</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openjdk.jmh</groupId>
+			<artifactId>jmh-generator-annprocess</artifactId>
+			<version>1.19</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<!-- Do not remove - Maven incorrectly identifies it as an unused dependency!  -->
 			<groupId>org.scijava</groupId>
 			<artifactId>scripting-jython</artifactId>
