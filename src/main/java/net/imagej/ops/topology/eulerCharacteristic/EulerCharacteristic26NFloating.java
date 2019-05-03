@@ -260,34 +260,31 @@ public class EulerCharacteristic26NFloating
     				//set up cursors to iterate in the octant locations 
     				final Cursor<B> octantCursor1 = Views.flatIterable(interval).cursor();
     				final Cursor<B> octantCursor2 = Views.flatIterable(interval).cursor();
-    				final Cursor<B> octantCursor3 = Views.flatIterable(interval).cursor();
-    				final Cursor<B> octantCursor4 = Views.flatIterable(interval).cursor();
     				final Cursor<B> octantCursor5 = Views.flatIterable(interval).cursor();
     				final Cursor<B> octantCursor6 = Views.flatIterable(interval).cursor();
-    				final Cursor<B> octantCursor7 = Views.flatIterable(interval).cursor();
-    				final Cursor<B> octantCursor8 = Views.flatIterable(interval).cursor();
 
     				octantCursor1.jumpFwd(start);
     				octantCursor2.jumpFwd(start + w);
-    				octantCursor3.jumpFwd(start + 1);
-    				octantCursor4.jumpFwd(start + w + 1);
     				octantCursor5.jumpFwd(start + w * h);
     				octantCursor6.jumpFwd(start + w * h + w);
-    				octantCursor7.jumpFwd(start + w * h + 1);
-    				octantCursor8.jumpFwd(start + w * h + w + 1);
+
+					boolean o1 = octantCursor1.next().get();
+					boolean o2 = octantCursor2.next().get();
+					boolean o5 = octantCursor5.next().get();
+					boolean o6 = octantCursor6.next().get();
+
+					int value = ( o1 ? 4 : 0 ) | ( o2 ? 8 : 0 ) | ( o5 ? 64 : 0 ) | ( o6 ? 128 : 0 );
 
     				for (int i = 0; i < steps; i++) {
-    					boolean o1 = octantCursor1.next().get();
-    					boolean o2 = octantCursor2.next().get();
-    					boolean o3 = octantCursor3.next().get();
-    					boolean o4 = octantCursor4.next().get();
-    					boolean o5 = octantCursor5.next().get();
-    					boolean o6 = octantCursor6.next().get();
-    					boolean o7 = octantCursor7.next().get();
-    					boolean o8 = octantCursor8.next().get();
-    					
-    					if (o1 || o2 || o3 || o4 || o5 || o6 || o7 || o8)
-    					  threadSumDeltaEuler[n] += getDeltaEuler(o1, o2, o3, o4, o5, o6, o7, o8);
+    					boolean o3 = octantCursor1.next().get();
+    					boolean o4 = octantCursor2.next().get();
+    					boolean o7 = octantCursor5.next().get();
+    					boolean o8 = octantCursor6.next().get();
+
+						value |= ((value & 0b11001100) >> 2) | ( o3 ? 4 : 0 ) | ( o4 ? 8 : 0 ) | ( o7 ? 64 : 0 ) | ( o8 ? 128 : 0 );
+
+    					if ( value != 0 )
+							threadSumDeltaEuler[n] += DELTA_EULER_LUT[ value ];
     				}
     			}
     		};
