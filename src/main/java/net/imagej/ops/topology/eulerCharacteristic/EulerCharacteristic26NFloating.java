@@ -308,8 +308,35 @@ public class EulerCharacteristic26NFloating
     	output.set(sumDeltaEuler / 8.0);
     }
 
-    /** Determines the Δχ from Toriwaki & Yonekura value for this 2x2x2 neighborhood */
-    private static int getDeltaEuler(boolean o1, boolean o2,
+
+	/**
+	 * Determines the Δχ from Toriwaki & Yonekura value for this 2x2x2 neighborhood
+	 */
+	private static int getDeltaEuler( boolean o1, boolean o2,
+			boolean o3, boolean o4, boolean o5, boolean o6, boolean o7, boolean o8 )
+	{
+		return DELTA_EULER_LUT[ ( o1 ? 1 : 0 ) | ( o2 ? 2 : 0 ) | ( o3 ? 4 : 0 ) | ( o4 ? 8 : 0 ) | ( o5 ? 16 : 0 ) | ( o6 ? 32 : 0 ) | ( o7 ? 64 : 0 ) | ( o8 ? 128 : 0 ) ];
+	}
+
+	private static int DELTA_EULER_LUT[] = initDeltaEulerLut();
+
+	private static int[] initDeltaEulerLut()
+	{
+		int[] result = new int[ 256 ];
+		for ( int i = 0; i < result.length; i++ )
+		{
+			result[i] = calculateDeltaEuler( bit(i, 0), bit(i, 1), bit(i, 2), bit(i, 3), bit(i, 4), bit(i, 5), bit(i, 6), bit(i, 7)   );
+		}
+		return result;
+	}
+
+	private static boolean bit( int value, int bit )
+	{
+		return (value & (1 << bit)) != 0;
+	}
+
+	/** Determines the Δχ from Toriwaki & Yonekura value for this 2x2x2 neighborhood */
+    private static int calculateDeltaEuler(boolean o1, boolean o2,
     	boolean o3, boolean o4, boolean o5, boolean o6, boolean o7, boolean o8)
     {
         int index = 1;
